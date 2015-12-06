@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 project(CpperoMQLearnin)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
+set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 # These are things that I got from a CMake File made by jship on github
 # https://github.com/jship/CpperoMQ-examples/blob/master/CMakeLists.txt
@@ -17,18 +17,23 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMake/Modules)
 
 INCLUDE(InstallRequiredSystemLibraries)
 
-find_package(SODIUM REQUIRED)
+find_package(Sodium REQUIRED)
 include_directories(${SODIUM_INCLUDE_DIR})
 
-find_package(ZEROMQ REQUIRED)
+find_package(ZeroMQ REQUIRED)
 include_directories(${ZEROMQ_INCLUDE_DIR})
 
-#find_package(CPPEROMQ REQUIRED)
-#include_directories(${CPPEROMQ_INCLUDE_DIR})
+find_package(ZeroMQPP REQUIRED)
+include_directories(${ZZeroMQPP_INCLUDE_DIR})
+
+find_package(CpperoMQ REQUIRED)
+include_directories(${CPPEROMQ_INCLUDE_DIR})
+
+find_package(Threads)
 
 include_directories(~/Projects/CpperoMQ/include/)
 
 
 set(SOURCE_FILES main.cpp)
 add_executable(CpperoMQLearnin ${SOURCE_FILES})
-target_link_libraries(CpperoMQLearnin ${ZEROMQ_LIBRARIES})
+target_link_libraries(CpperoMQLearnin ${ZEROMQ_LIBRARIES} ${ZeroMQPP_LIBRARY} Threads::Threads)

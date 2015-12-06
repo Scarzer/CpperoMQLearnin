@@ -1,75 +1,84 @@
-#include <CpperoMQ/All.hpp>
-
-#include <iostream>
+#include <zmqpp/zmqpp.hpp>
 #include <thread>
-#include <vector>
-#include <tuple>
-#include <sstream>
+#include <iostream>
+#include <chrono>
 
-using namespace std;
-using namespace CpperoMQ;
+void modbusSock(zmqpp::context &context){
+    zmqpp::socket_type type = zmqpp::socket_type::pair;
 
-/* Publisher */
+    zmqpp::socket inBout(context, type);
+    zmqpp::socket outBout(context, type);
 
-// Pulling something out of the documentation
-class Voltage : public Sendable, public Receivable{
-public:
+    inBout.set(zmqpp::socket_option::receive_timeout, 0);
+    outBout.set(zmqpp::socket_option::send_timeout, 0);
 
-    // Whateverz
-    virtual bool send(const CpperoMQ::Socket& socket, const bool moreToSend) const override{};
+    inBout.bind("inproc://modbusSock");
+    outBout.connect("inproc://canbusSock");
 
-private:
+    bool theTruth = true;
 
-    int voltageVal;
-    int moduleNum;
-    int shelfNum;
-    std::string mName = "Voltage";
-};
+    while(theTruth) {
 
+        zmqpp::message outMessage;
 
-int main() {
-    Context context;
-    PublishSocket publisher(context.createPublishSocket());
-    publisher.bind("tcp://*:5559");
+        outMessage << "41001" << 32;
+        outBout.send(outMessage);
 
-    while (true){
-        std::cout << "Sending multipart message" << std::endl;
-        publisher.send(OutgoingMessage("Voltage"),
-                       OutgoingMessage("12345"),
-                       OutgoingMessage("More Message!"));
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    return 0;
+
 }
 
+void canbusSock(zmqpp::context& context){
 
-/* Subscriber
+    zmqpp::socket_type type = zmqpp::socket_type::pair;
+
+    zmqpp::socket inBout(context, type);
+    zmqpp::socket outBout(context, type);
+
+    inBout.bind("inproc://canbusSock");
+    outBout.connect("inproc://modbusSock");
+
+    bool theTruth = true;
+
+    while(theTruth){
+
+        std::cout << "Sending a message..." << std::endl;
+        zmqpp::message inboundMsg;
+        inBout.receive(inboundMsg, false);
+
+        std::cout << "Got something!" << std::endl;
+
+        std::string registerNum;
+        int value;
+
+        inboundMsg>> registerNum >> value;
+        std::cout << "Register # " << registerNum << "Value recieved: " << value << "\n";
+        std::cout << "Sending out a 3..." << std::endl;
+
+        zmqpp::message outgoingMsg;
+        outgoingMsg << "Something" << 3;
+        outBout.send(outgoingMsg);
+
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
+}
 
 int main(){
-    Context context;
-    SubscribeSocket subscriber(context.createSubscribeSocket());
-    subscriber.connect("tcp://localhost:5556");
+    std::cout << "Making the sockets that we'll be using!"
+              << "\n They have to share a context. So send that shit out to the threads!";
+    zmqpp::context context;
 
-    subscriber.subscribe("Voltage");
+    std::cout << "Starting the test for Inter Thread Comm" << std::endl;
 
-    int updateNumber = 0;
-    long voltageTotal = 0;
-    std::vector<std::tuple<int, int>> values;
+    std::thread mT(modbusSock, std::ref(context));
+    std::thread cT(canbusSock, std::ref(context));
 
-    for (updateNumber = 0; updateNumber < 100; ++updateNumber){
-        IncomingMessage update;
-        subscriber.receive(update);
+    mT.detach();
+    cT.join();
 
-        std::cout << "Message Recieved" << std::endl;
 
-        int voltage = 0;
-        std::istringstream iss(std::string(update.charData(), update.size()));
-        iss >> voltage;
-        voltageTotal += voltage;
-        values.push_back(std::tuple<int, int>(voltage, voltageTotal));
-    }
 
-    std::cout << "Average Voltage: " << (voltageTotal / updateNumber) << std::endl;
+    return 0;
+
 }
-
-*/
