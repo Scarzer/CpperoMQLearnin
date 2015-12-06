@@ -33,7 +33,12 @@ find_package(Threads)
 
 include_directories(~/Projects/CpperoMQ/include/)
 
+INCLUDE(FindPkgConfig)
+pkg_check_modules(MODBUS REQUIRED libmodbus)
+include_directories(${MODBUS_INCLUDE_DIRS})
+link_directories(${MODBUS_LIBRARY_DIRS})
 
-set(SOURCE_FILES main.cpp)
-add_executable(CpperoMQLearnin ${SOURCE_FILES})
-target_link_libraries(CpperoMQLearnin ${ZEROMQ_LIBRARIES} ${ZeroMQPP_LIBRARY} Threads::Threads)
+
+set(SOURCE_FILES main.cpp modbusServer.cpp modbusServer.h)
+add_executable(CpperoMQLearnin ${SOURCE_FILES} modbusServer.cpp modbusServer.h)
+target_link_libraries(CpperoMQLearnin ${ZEROMQ_LIBRARIES} ${ZeroMQPP_LIBRARY} Threads::Threads ${MODBUS_LIBRARIES})

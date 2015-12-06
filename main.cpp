@@ -2,6 +2,7 @@
 #include <thread>
 #include <iostream>
 #include <chrono>
+#include "modbusServer.h"
 
 void modbusSock(zmqpp::context &context){
     zmqpp::socket_type type = zmqpp::socket_type::pair;
@@ -65,6 +66,8 @@ void canbusSock(zmqpp::context& context){
 }
 
 int main(){
+
+    /*
     std::cout << "Making the sockets that we'll be using!"
               << "\n They have to share a context. So send that shit out to the threads!";
     zmqpp::context context;
@@ -76,8 +79,10 @@ int main(){
 
     mT.detach();
     cT.join();
+    */
 
-
+    modbusServer modSer("0.0.0.0", 1502);
+    std::thread modbusThread ();
 
     return 0;
 
